@@ -98,8 +98,7 @@ async fn pwm_set_config(slice4: Peri<'static, PWM_SLICE4>, pin25: Peri<'static, 
 }
 
 
-#[embassy_executor::task]
-async fn run_task_gpio_4(slice2: Peri<'static, PWM_SLICE2>, pin4: Peri<'static, PIN_4>) {
+fn get_pwm_config() -> Config {
     // If we aim for a specific frequency, here is how we can calculate the top value.
     // The top value sets the period of the PWM cycle, so a counter goes from 0 to top and then wraps around to 0.
     // Every such wraparound is one PWM cycle. So here is how we get 25KHz:
@@ -111,9 +110,10 @@ async fn run_task_gpio_4(slice2: Peri<'static, PWM_SLICE2>, pin4: Peri<'static, 
     let mut c = Config::default();
     c.top = period;
     c.divider = divider.into();
+    c
+}
 
-    let mut pwm = Pwm::new_output_a(slice2, pin4, c.clone());
-
+async fn run_pwm_loop(mut pwm: Pwm<'_>, top: u16) {
     loop {
         // 100% duty cycle, fully on
         pwm.set_duty_cycle_fully_on().unwrap();
@@ -124,7 +124,7 @@ async fn run_task_gpio_4(slice2: Peri<'static, PWM_SLICE2>, pin4: Peri<'static, 
         Timer::after_secs(1).await;
 
         // 25% duty cycle. Expressed as 32768/4 = 8192.
-        pwm.set_duty_cycle(c.top / 4).unwrap();
+        pwm.set_duty_cycle(top / 4).unwrap();
         Timer::after_secs(1).await;
 
         // 0% duty cycle, fully off.
@@ -134,36 +134,15 @@ async fn run_task_gpio_4(slice2: Peri<'static, PWM_SLICE2>, pin4: Peri<'static, 
 }
 
 #[embassy_executor::task]
-async fn run_task_gpio_17(slice2: Peri<'static, PWM_SLICE0>, pin: Peri<'static, PIN_17>) {
-    // If we aim for a specific frequency, here is how we can calculate the top value.
-    // The top value sets the period of the PWM cycle, so a counter goes from 0 to top and then wraps around to 0.
-    // Every such wraparound is one PWM cycle. So here is how we get 25KHz:
-    let desired_freq_hz = 25_000;
-    let clock_freq_hz = embassy_rp::clocks::clk_sys_freq();
-    let divider = 16u8;
-    let period = (clock_freq_hz / (desired_freq_hz * divider as u32)) as u16 - 1;
+async fn run_task_gpio_4(slice2: Peri<'static, PWM_SLICE2>, pin4: Peri<'static, PIN_4>) {
+    let c = get_pwm_config();
+    let pwm = Pwm::new_output_a(slice2, pin4, c.clone());
+    run_pwm_loop(pwm, c.top).await;
+}
 
-    let mut c = Config::default();
-    c.top = period;
-    c.divider = divider.into();
-
-    let mut pwm = Pwm::new_output_b(slice2, pin, c.clone());
-
-    loop {
-        // 100% duty cycle, fully on
-        pwm.set_duty_cycle_fully_on().unwrap();
-        Timer::after_secs(1).await;
-
-        // 66% duty cycle. Expressed as simple percentage.
-        pwm.set_duty_cycle_percent(66).unwrap();
-        Timer::after_secs(1).await;
-
-        // 25% duty cycle. Expressed as 32768/4 = 8192.
-        pwm.set_duty_cycle(c.top / 4).unwrap();
-        Timer::after_secs(1).await;
-
-        // 0% duty cycle, fully off.
-        pwm.set_duty_cycle_fully_off().unwrap();
-        Timer::after_secs(1).await;
-    }
+#[embassy_executor::task]
+async fn run_task_gpio_17(slice0: Peri<'static, PWM_SLICE0>, pin17: Peri<'static, PIN_17>) {
+    let c = get_pwm_config();
+    let pwm = Pwm::new_output_b(slice0, pin17, c.clone());
+    run_pwm_loop(pwm, c.top).await;
 }
