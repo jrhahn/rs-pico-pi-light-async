@@ -7,26 +7,6 @@
 #![no_std]
 #![no_main]
 
-
-/*
-Slice,Kanal A (Pin),Kanal B (Pin)
-0,"GPIO 0, 16","GPIO 1, 17"
-1,"GPIO 2, 18","GPIO 3, 19"
-2,"GPIO 4, 20","GPIO 5, 21"
-3,"GPIO 6, 22","GPIO 7, 23"
-4,"GPIO 8, 24","GPIO 9, 25"
-5,"GPIO 10, 26","GPIO 11, 27"
-6,"GPIO 12, 28","GPIO 13, 29"
-7,GPIO 14,GPIO 15
-
-Beschriftung (Board),Code (embassy-rp),PWM Slice,Kanal
-0 bis 15,p.PIN_0 bis p.PIN_15,Slices 0-7,A & B abwechselnd
-16,p.PIN_16,Slice 0,A
-17,p.PIN_17,Slice 0,B
-18,p.PIN_18,Slice 1,A
-25,p.PIN_25,Slice 4,B
-*/
-
 use defmt::*;
 use embassy_executor::Spawner;
 use embassy_rp::peripherals::{
@@ -70,12 +50,104 @@ use embassy_rp::Peri;
 use embassy_time::Timer;
 use {defmt_rtt as _, panic_probe as _};
 
+/*
+Slice   Kanal A (Pin)   Kanal B (Pin)
+0       GPIO 0, 16      GPIO 1, 17
+1       GPIO 2, 18      GPIO 3, 19
+2,      GPIO 4, 20      GPIO 5, 21
+3       GPIO 6, 22      GPIO 7, 23
+4       GPIO 8, 24      GPIO 9, 25
+5       GPIO 10, 26     GPIO 11, 27
+6       GPIO 12, 28     GPIO 13, 29
+7       GPIO 14         GPIO 15
+
+
+Beschriftung (Board),Code (embassy-rp),PWM Slice,Kanal
+0 bis 15,p.PIN_0 bis p.PIN_15,Slices 0-7,A & B abwechselnd
+16,p.PIN_16,Slice 0,A
+17,p.PIN_17,Slice 0,B
+18,p.PIN_18,Slice 1,A
+25,p.PIN_25,Slice 4,B
+*/
+
+
+#[embassy_executor::task]
+async fn run_task_pin0(slice: Peri<'static, PWM_SLICE0>, pin: Peri<'static, PIN_0>) {
+    let c = get_pwm_config();
+    let pwm = Pwm::new_output_a(slice, pin, c.clone());
+    run_pwm_loop(pwm, c.top,0 ).await;
+}
+#[embassy_executor::task]
+async fn run_task_pin1(slice: Peri<'static, PWM_SLICE0>, pin: Peri<'static, PIN_1>) {
+    let c = get_pwm_config();
+    let pwm = Pwm::new_output_b(slice, pin, c.clone());
+    run_pwm_loop(pwm, c.top,0 ).await;
+}
+#[embassy_executor::task]
+async fn run_task_pin2(slice: Peri<'static, PWM_SLICE1>, pin: Peri<'static, PIN_2>) {
+    let c = get_pwm_config();
+    let pwm = Pwm::new_output_a(slice, pin, c.clone());
+    run_pwm_loop(pwm, c.top,0 ).await;
+}
+#[embassy_executor::task]
+async fn run_task_pin3(slice: Peri<'static, PWM_SLICE1>, pin: Peri<'static, PIN_3>) {
+    let c = get_pwm_config();
+    let pwm = Pwm::new_output_b(slice, pin, c.clone());
+    run_pwm_loop(pwm, c.top,0 ).await;
+}
+#[embassy_executor::task]
+async fn run_task_pin4(slice: Peri<'static, PWM_SLICE2>, pin: Peri<'static, PIN_4>) {
+    let c = get_pwm_config();
+    let pwm = Pwm::new_output_a(slice, pin, c.clone());
+    run_pwm_loop(pwm, c.top,0 ).await;
+}
+#[embassy_executor::task]
+async fn run_task_pin5(slice: Peri<'static, PWM_SLICE2>, pin: Peri<'static, PIN_5>) {
+    let c = get_pwm_config();
+    let pwm = Pwm::new_output_b(slice, pin, c.clone());
+    run_pwm_loop(pwm, c.top,0 ).await;
+}
+#[embassy_executor::task]
+async fn run_task_pin6(slice: Peri<'static, PWM_SLICE3>, pin: Peri<'static, PIN_6>) {
+    let c = get_pwm_config();
+    let pwm = Pwm::new_output_a(slice, pin, c.clone());
+    run_pwm_loop(pwm, c.top,0 ).await;
+}
+#[embassy_executor::task]
+async fn run_task_pin7(slice: Peri<'static, PWM_SLICE3>, pin: Peri<'static, PIN_7>) {
+    let c = get_pwm_config();
+    let pwm = Pwm::new_output_b(slice, pin, c.clone());
+    run_pwm_loop(pwm, c.top,0 ).await;
+}
+
+
+
+
+/*
+#[embassy_executor::task]
+async fn run_task_gpio_4(slice2: Peri<'static, PWM_SLICE2>, pin4: Peri<'static, PIN_4>) {
+    let c = get_pwm_config();
+    let pwm = Pwm::new_output_a(slice2, pin4, c.clone());
+    run_pwm_loop(pwm, c.top,0 ).await;
+}
+*/
+#[embassy_executor::task]
+async fn run_task_gpio_17(slice0: Peri<'static, PWM_SLICE0>, pin17: Peri<'static, PIN_17>) {
+    let c = get_pwm_config();
+    let pwm = Pwm::new_output_b(slice0, pin17, c.clone());
+    run_pwm_loop(pwm, c.top, 1).await;
+}
+
+
+
 #[embassy_executor::main]
 async fn main(spawner: Spawner) {
     let p = embassy_rp::init(Default::default());
     // onboard LED 
     // spawner.spawn(pwm_set_config(p.PWM_SLICE4, p.PIN_25)).unwrap();
-    spawner.spawn(run_task_gpio_4(p.PWM_SLICE2, p.PIN_4)).unwrap();
+    spawner.spawn(run_task_pin3(p.PWM_SLICE1, p.PIN_3)).unwrap();
+    spawner.spawn(run_task_pin4(p.PWM_SLICE2.clone(), p.PIN_4)).unwrap();
+    spawner.spawn(run_task_pin5(p.PWM_SLICE2, p.PIN_5)).unwrap();
     spawner.spawn(run_task_gpio_17(p.PWM_SLICE0, p.PIN_17)).unwrap();
 }
 
@@ -113,8 +185,10 @@ fn get_pwm_config() -> Config {
     c
 }
 
-async fn run_pwm_loop(mut pwm: Pwm<'_>, top: u16) {
+async fn run_pwm_loop(mut pwm: Pwm<'_>, top: u16, offset: u64) {
     loop {
+        Timer::after_secs(offset).await;
+
         // 100% duty cycle, fully on
         pwm.set_duty_cycle_fully_on().unwrap();
         Timer::after_secs(1).await;
@@ -131,18 +205,4 @@ async fn run_pwm_loop(mut pwm: Pwm<'_>, top: u16) {
         pwm.set_duty_cycle_fully_off().unwrap();
         Timer::after_secs(1).await;
     }
-}
-
-#[embassy_executor::task]
-async fn run_task_gpio_4(slice2: Peri<'static, PWM_SLICE2>, pin4: Peri<'static, PIN_4>) {
-    let c = get_pwm_config();
-    let pwm = Pwm::new_output_a(slice2, pin4, c.clone());
-    run_pwm_loop(pwm, c.top).await;
-}
-
-#[embassy_executor::task]
-async fn run_task_gpio_17(slice0: Peri<'static, PWM_SLICE0>, pin17: Peri<'static, PIN_17>) {
-    let c = get_pwm_config();
-    let pwm = Pwm::new_output_b(slice0, pin17, c.clone());
-    run_pwm_loop(pwm, c.top).await;
 }
