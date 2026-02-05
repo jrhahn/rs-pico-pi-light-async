@@ -10,40 +10,10 @@
 use defmt::*;
 use embassy_executor::Spawner;
 use embassy_rp::peripherals::{
-    PIN_0,
-    PIN_1,
-    PIN_2,
-    PIN_3,
-    PIN_4,
-    PIN_5,
-    PIN_6,
-    PIN_7,
-    PIN_8,
-    PIN_9,
-    PIN_10,
-    PIN_11,
-    PIN_12,
-    PIN_13,
-    PIN_14,
-    PIN_15,
-    PIN_16,
-    PIN_17,
-    PIN_18,
-    PIN_19,
-    PIN_20,
-    PIN_21,
-    PIN_22,
-    PIN_23,
-    PIN_24,
-    PIN_25, 
-    PWM_SLICE0,
-    PWM_SLICE1,
-    PWM_SLICE2,
-    PWM_SLICE3,
-    PWM_SLICE4,
-    PWM_SLICE5,
-    PWM_SLICE6,
-    PWM_SLICE7,
+    PIN_0, PIN_1, PIN_10, PIN_11, PIN_12, PIN_13, PIN_14, PIN_15, PIN_16, PIN_17, PIN_18, PIN_19,
+    PIN_2, PIN_20, PIN_21, PIN_22, PIN_23, PIN_24, PIN_25, PIN_3, PIN_4, PIN_5, PIN_6, PIN_7,
+    PIN_8, PIN_9, PWM_SLICE0, PWM_SLICE1, PWM_SLICE2, PWM_SLICE3, PWM_SLICE4, PWM_SLICE5,
+    PWM_SLICE6, PWM_SLICE7,
 };
 use embassy_rp::pwm::{Config, Pwm, SetDutyCycle};
 use embassy_rp::Peri;
@@ -70,58 +40,104 @@ Beschriftung (Board),Code (embassy-rp),PWM Slice,Kanal
 25,p.PIN_25,Slice 4,B
 */
 
-
 #[embassy_executor::task]
 async fn run_task_pin0(slice: Peri<'static, PWM_SLICE0>, pin: Peri<'static, PIN_0>) {
     let c = get_pwm_config();
     let pwm = Pwm::new_output_a(slice, pin, c.clone());
-    run_pwm_loop(pwm, c.top,0 ).await;
+    run_pwm_loop(pwm, c.top, 0).await;
 }
 #[embassy_executor::task]
 async fn run_task_pin1(slice: Peri<'static, PWM_SLICE0>, pin: Peri<'static, PIN_1>) {
     let c = get_pwm_config();
     let pwm = Pwm::new_output_b(slice, pin, c.clone());
-    run_pwm_loop(pwm, c.top,0 ).await;
+    run_pwm_loop(pwm, c.top, 0).await;
 }
+
 #[embassy_executor::task]
-async fn run_task_pin2(slice: Peri<'static, PWM_SLICE1>, pin: Peri<'static, PIN_2>) {
-    let c = get_pwm_config();
-    let pwm = Pwm::new_output_a(slice, pin, c.clone());
-    run_pwm_loop(pwm, c.top,0 ).await;
+async fn run_task_pin2_pin3(
+    slice: Peri<'static, PWM_SLICE1>,
+    pin_a: Peri<'static, PIN_2>,
+    pin_b: Peri<'static, PIN_3>,
+) {
+    let mut c = get_pwm_config();
+
+    // Set initial duty cycles
+    c.compare_a = c.top / 2; // 50%
+    c.compare_b = c.top / 4; // 25%
+
+    let mut pwm = Pwm::new_output_ab(slice, pin_a, pin_b, c.clone());
+
+    loop {
+        // Example: Independent duty cycles
+
+        // State 1: A=100%, B=0%
+        c.compare_a = c.top;
+        c.compare_b = 0;
+        pwm.set_config(&c);
+        Timer::after_secs(1).await;
+
+        // State 2: A=66%, B=33%
+        c.compare_a = (c.top as u32 * 2 / 3) as u16;
+        c.compare_b = (c.top as u32 * 1 / 3) as u16;
+        pwm.set_config(&c);
+        Timer::after_secs(1).await;
+
+        // State 3: A=0%, B=100%
+        c.compare_a = 0;
+        c.compare_b = c.top;
+        pwm.set_config(&c);
+        Timer::after_secs(1).await;
+    }
 }
+
 #[embassy_executor::task]
-async fn run_task_pin3(slice: Peri<'static, PWM_SLICE1>, pin: Peri<'static, PIN_3>) {
-    let c = get_pwm_config();
-    let pwm = Pwm::new_output_b(slice, pin, c.clone());
-    run_pwm_loop(pwm, c.top,0 ).await;
-}
-#[embassy_executor::task]
-async fn run_task_pin4(slice: Peri<'static, PWM_SLICE2>, pin: Peri<'static, PIN_4>) {
-    let c = get_pwm_config();
-    let pwm = Pwm::new_output_a(slice, pin, c.clone());
-    run_pwm_loop(pwm, c.top,0 ).await;
-}
-#[embassy_executor::task]
-async fn run_task_pin5(slice: Peri<'static, PWM_SLICE2>, pin: Peri<'static, PIN_5>) {
-    let c = get_pwm_config();
-    let pwm = Pwm::new_output_b(slice, pin, c.clone());
-    run_pwm_loop(pwm, c.top,0 ).await;
+async fn run_task_pin4_pin5(
+    slice: Peri<'static, PWM_SLICE2>,
+    pin_a: Peri<'static, PIN_4>,
+    pin_b: Peri<'static, PIN_5>,
+) {
+    let mut c = get_pwm_config();
+
+    // Set initial duty cycles
+    c.compare_a = c.top / 2; // 50%
+    c.compare_b = c.top / 4; // 25%
+
+    let mut pwm = Pwm::new_output_ab(slice, pin_a, pin_b, c.clone());
+
+    loop {
+        // Example: Independent duty cycles
+
+        // State 1: A=100%, B=0%
+        c.compare_a = c.top;
+        c.compare_b = 0;
+        pwm.set_config(&c);
+        Timer::after_secs(1).await;
+
+        // State 2: A=66%, B=33%
+        c.compare_a = (c.top as u32 * 2 / 3) as u16;
+        c.compare_b = (c.top as u32 * 1 / 3) as u16;
+        pwm.set_config(&c);
+        Timer::after_secs(1).await;
+
+        // State 3: A=0%, B=100%
+        c.compare_a = 0;
+        c.compare_b = c.top;
+        pwm.set_config(&c);
+        Timer::after_secs(1).await;
+    }
 }
 #[embassy_executor::task]
 async fn run_task_pin6(slice: Peri<'static, PWM_SLICE3>, pin: Peri<'static, PIN_6>) {
     let c = get_pwm_config();
     let pwm = Pwm::new_output_a(slice, pin, c.clone());
-    run_pwm_loop(pwm, c.top,0 ).await;
+    run_pwm_loop(pwm, c.top, 0).await;
 }
 #[embassy_executor::task]
 async fn run_task_pin7(slice: Peri<'static, PWM_SLICE3>, pin: Peri<'static, PIN_7>) {
     let c = get_pwm_config();
     let pwm = Pwm::new_output_b(slice, pin, c.clone());
-    run_pwm_loop(pwm, c.top,0 ).await;
+    run_pwm_loop(pwm, c.top, 0).await;
 }
-
-
-
 
 /*
 #[embassy_executor::task]
@@ -138,19 +154,22 @@ async fn run_task_gpio_17(slice0: Peri<'static, PWM_SLICE0>, pin17: Peri<'static
     run_pwm_loop(pwm, c.top, 1).await;
 }
 
-
-
 #[embassy_executor::main]
 async fn main(spawner: Spawner) {
     let p = embassy_rp::init(Default::default());
-    // onboard LED 
+    // onboard LED
     // spawner.spawn(pwm_set_config(p.PWM_SLICE4, p.PIN_25)).unwrap();
-    spawner.spawn(run_task_pin3(p.PWM_SLICE1, p.PIN_3)).unwrap();
-    spawner.spawn(run_task_pin4(p.PWM_SLICE2.clone(), p.PIN_4)).unwrap();
-    spawner.spawn(run_task_pin5(p.PWM_SLICE2, p.PIN_5)).unwrap();
-    spawner.spawn(run_task_gpio_17(p.PWM_SLICE0, p.PIN_17)).unwrap();
+    spawner
+        .spawn(run_task_pin2_pin3(p.PWM_SLICE1, p.PIN_2, p.PIN_3))
+        .unwrap();
+    // spawner.spawn(run_task_pin4(p.PWM_SLICE2.clone(), p.PIN_4)).unwrap();
+    spawner
+        .spawn(run_task_pin4_pin5(p.PWM_SLICE2, p.PIN_4, p.PIN_5))
+        .unwrap();
+    spawner
+        .spawn(run_task_gpio_17(p.PWM_SLICE0, p.PIN_17))
+        .unwrap();
 }
-
 
 /// Using the onboard led, if You are using a different Board than plain Pico2 (i.e. W variant)
 /// you must use another slice & pin and an appropriate resistor.
@@ -168,7 +187,6 @@ async fn pwm_set_config(slice4: Peri<'static, PWM_SLICE4>, pin25: Peri<'static, 
         pwm.set_config(&c);
     }
 }
-
 
 fn get_pwm_config() -> Config {
     // If we aim for a specific frequency, here is how we can calculate the top value.
