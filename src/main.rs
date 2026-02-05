@@ -60,33 +60,40 @@ async fn run_task_pin2_pin3(
     pin_b: Peri<'static, PIN_3>,
 ) {
     let mut c = get_pwm_config();
-
-    // Set initial duty cycles
-    c.compare_a = c.top / 2; // 50%
-    c.compare_b = c.top / 4; // 25%
-
     let mut pwm = Pwm::new_output_ab(slice, pin_a, pin_b, c.clone());
 
+    // Simple Xorshift RNG state
+    let mut rng = 0xDEAD_BEEF;
+
     loop {
-        // Example: Independent duty cycles
+        // Fire simulation: Random flicker
+        // Update RNG for Pin A
+        rng ^= rng << 13;
+        rng ^= rng >> 17;
+        rng ^= rng << 5;
+        let r_a = rng;
 
-        // State 1: A=100%, B=0%
-        c.compare_a = c.top;
-        c.compare_b = 0;
-        pwm.set_config(&c);
-        Timer::after_secs(1).await;
+        // Update RNG for Pin B
+        rng ^= rng << 13;
+        rng ^= rng >> 17;
+        rng ^= rng << 5;
+        let r_b = rng;
 
-        // State 2: A=66%, B=33%
-        c.compare_a = (c.top as u32 * 2 / 3) as u16;
-        c.compare_b = (c.top as u32 * 1 / 3) as u16;
-        pwm.set_config(&c);
-        Timer::after_secs(1).await;
+        // Generate intensity between 10% and 100% of top for realistic fire glow
+        let min_val = c.top / 10;
+        let range = c.top - min_val;
 
-        // State 3: A=0%, B=100%
-        c.compare_a = 0;
-        c.compare_b = c.top;
+        // Calculate random brightness
+        let val_a = min_val + (r_a % range as u32) as u16;
+        let val_b = min_val + (r_b % range as u32) as u16;
+
+        c.compare_a = val_a;
+        c.compare_b = val_b;
         pwm.set_config(&c);
-        Timer::after_secs(1).await;
+
+        // Random flicker speed between 20ms and 100ms
+        let delay_ms = 20 + (r_a % 80) as u64;
+        Timer::after_millis(delay_ms).await;
     }
 }
 
