@@ -223,7 +223,7 @@ async fn run_task_pin6_pin7(
     let mut c = get_pwm_config();
     let mut pwm = Pwm::new_output_ab(slice, pin_a, pin_b, c.clone());
 
-    run_counter(c, pwm, 0).await;
+    run_counter(c, pwm, 6).await;
 }
 
 #[embassy_executor::task]
